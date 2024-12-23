@@ -224,4 +224,8 @@ var Config = struct {
 	// UI path  => localhost:18000/foo"
 	// API path => localhost:18000/foo/api/v1"
 	WebPrefix string `env:"FLAGR_WEB_PREFIX" envDefault:""`
+
+	// OpenTelemetry Configuration
+	OTELEnabled  bool   `env:"FLAGR_OTEL_ENABLED" envDefault:"false"`
+	OTELEndpoint string `env:"FLAGR_OTEL_ENDPOINT" envDefault:"localhost:4317"`
 }{}

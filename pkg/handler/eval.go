@@ -2,10 +2,11 @@ package handler
 
 import (
 	"fmt"
-	jsoniter "github.com/json-iterator/go"
 	"math/rand"
 	"sync"
 	"time"
+
+	jsoniter "github.com/json-iterator/go"
 
 	"github.com/openflagr/flagr/pkg/config"
 	"github.com/openflagr/flagr/pkg/entity"
@@ -18,6 +19,8 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/zhouzhuojie/conditions"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // Eval is the Eval interface
@@ -33,7 +36,17 @@ func NewEval() Eval {
 
 type eval struct{}
 
+var tracer = otel.Tracer("flagr/eval")
+
 func (e *eval) PostEvaluation(params evaluation.PostEvaluationParams) middleware.Responder {
+	_, span := tracer.Start(params.HTTPRequest.Context(), "PostEvaluation")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.String("entity_id", params.Body.EntityID),
+		attribute.String("entity_type", params.Body.EntityType),
+	)
+
 	evalContext := params.Body
 	if evalContext == nil {
 		return evaluation.NewPostEvaluationDefault(400).WithPayload(

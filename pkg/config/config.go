@@ -12,6 +12,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel/sdk/trace"
 )
 
 // EvalOnlyModeDBDrivers is a list of DBDrivers that we should only run in EvalOnlyMode.
@@ -25,6 +26,7 @@ var Global = struct {
 	NewrelicApp  newrelic.Application
 	StatsdClient *statsd.Client
 	Prometheus   prometheusMetrics
+	TraceProvider *trace.TracerProvider
 }{}
 
 func init() {
@@ -36,6 +38,7 @@ func init() {
 	setupStatsd()
 	setupNewrelic()
 	setupPrometheus()
+	setupTracing()
 }
 
 func setupEvalOnlyMode() {
@@ -131,6 +134,17 @@ func setupPrometheus() {
 				Name: "flagr_requests_buckets",
 				Help: "A histogram of latencies for requests received",
 			}, []string{"status", "path", "method"})
+		}
+	}
+}
+
+func setupTracing() {
+	if Config.OTELEnabled {
+		tp, err := InitTracer()
+		if err != nil {
+			logrus.WithError(err).Error("failed to initialize tracer provider")
+		} else {
+			Global.TraceProvider = tp
 		}
 	}
 }
